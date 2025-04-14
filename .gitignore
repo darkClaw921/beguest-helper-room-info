@@ -1,0 +1,15 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.env
+# Google Sheets
+profzaboru-5f6f677a3cd8.json
+beget-test-456816-c17398de9334.json
+logs
