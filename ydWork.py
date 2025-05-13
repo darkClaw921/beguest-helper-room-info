@@ -82,11 +82,11 @@ class YandexDiskManager:
         # pprint(filesHash)
         return filesHash 
 
-    #переносим файл из одной папки в другую 
-    def move_file(mainFilePath, secondPath):
 
 
-        pass
+    def download_file(self, path, folder_path,nameFile) ->None:
+        self.yadisk.download(path, folder_path+"/"+nameFile)
+
 
 FOLDERS={}
 

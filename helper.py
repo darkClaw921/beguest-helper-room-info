@@ -5,10 +5,10 @@ from test import encode_yandex_url
 def get_path_to_file_instruction(url, returnIsUrl=False)->list[str]:
     """
     Получает путь к файлу из URL
-    in: https://docs.yandex.ru/docs/view?url=ya-disk-public%3A%2F%2FED7Np%2FfsnHmFPEp0%2BkOUdjFQQAs9J%2FKvkBTN4qWxuSujpRlCytnY3t95176lSoayq%2FJ6bpmRyOJonT3VoXnDag%3D%3D%3A%2FАдреса%2C%20Инструкции%2FМалевич(Трамвайный%20пер.%202%20кор.7-237).docx&name=Малевич(Трамвайный%20пер.%202%20кор.7-237).docx 
+    in: https://docs.yandex.ru/docs/view?url=ya-disk-public%3A%2F%mFJ6bpmRеса%2C%20Инструкции%2FМалпер.%202%20кор.7-237).docx&name=Малевич(Трамвайный%20пер.%202%20кор.7-237).docx 
     out:Адреса, Инструкции/8 марта 204Д - 116 (16) .docx
     returnIsUrl:True - возвращает URL без кодировки
-    https://docs.yandex.ru/docs/view?url=ya-disk-public://ED7Np/fsnHmFPEp0+kOUdjFQQAs9J/KvkBTN4qWxuSujpRlCytnY3t95176lSoayq/J6bpmRyOJonT3VoXnDag==:/Адреса, Инструкции/Малевич(Трамвайный пер. 2 кор.7-237).docx&name=Малевич(Трамвайный пер. 2 кор.7-237).docx
+    https://docs.yandex.ru/docs/view?url=ya-disk-public://Np/fsAs9J/KnY3t95176lSoayq/J6bpmRyoXnDag==:/Адреса, Инструкции/Малевич(Трамвайный пер. 2 кор.7-237).docx&name=Малевич(Трамвайный пер. 2 кор.7-237).docx
     """
     urls=url.split(',')
     # Разбиваем URL на части по параметрам
@@ -45,12 +45,16 @@ def get_path_to_file_instruction(url, returnIsUrl=False)->list[str]:
 def get_path_to_file_info(url, returnIsUrl=False)->list[str]:
     """
     Получает путь к файлу из URL
-    in: https://disk.yandex.ru/d/GdBBbAgu5NFSFQ/ИНФО%20ПО%20КВАРТИРАМ/8%20марта%20204д%20-%20116%20(16%20этаж)/Где%20мусорка.mov
+    in: https://disk.yandex.ru/d/GdB/ИНФО%20ПО%/0204д%20-%20116%20(16%20этаж)/Где%20мусорка.mov
     out:/ИНФО ПО КВАРТИРАМ/8 марта 204д - 116 (16 этаж)/Где мусорка.mov
     returnIsUrl:True - возвращает URL без кодировки
-    'https://disk.yandex.ru/d/GdBBbAgu5NFSFQ/ИНФО ПО КВАРТИРАМ/8 марта 204д - 116 (16 этаж)/Где мусорка.mov'
+    'https://disk.yandex.ru/d/GFQ/ИНФО ПО КВАРТИРАМ/8 марта 204д - 116 (16 этаж)/Где мусорка.mov'
     """
-    urls=url.split(',')
+    try:
+        urls=url.split(',')
+    except:
+        urls=url
+
     prepare_urls=[]
     for url in urls:
         if returnIsUrl:
@@ -73,8 +77,8 @@ def get_path_to_file_info(url, returnIsUrl=False)->list[str]:
 def prepare_url_encoding(url):
     """
     Преобразует декодированный URL в корректно закодированный URL
-    in: https://disk.yandex.ru/d/GdBBbAgu5NFSFQ/ИНФО ПО КВАРТИРАМ/Готвальда 24 корп.4 -103/Где мусорка.mov
-    out: https://disk.yandex.ru/d/GdBBbAgu5NFSFQ/%D0%98%D0%9D%D0%A4%D0%9E%20%D0%9F%D0%9E%20%D0%9A%D0%92%D0%90%D0%A0%D0%A2%D0%98%D0%A0%D0%90%D0%9C/%D0%93%D0%BE%D1%82%D0%B2%D0%B0%D0%BB%D1%8C%D0%B4%D0%B0%2024%20%D0%BA%D0%BE%D1%80%D0%BF.4%20-103/%D0%93%D0%B4%D0%B5%20%D0%BC%D1%83%D1%81%D0%BE%D1%80%D0%BA%D0%B0.mov
+    in: https://disk.yandex.ru/d/SFQ/ИНФО ПО КВАРТИРАМ/Готвальда 24 корп.4 -103/Где мусорка.mov
+    out: https://disk.yandex.ru/d/5N%98%D0%A0%D0%90%D0%9C/%D0%93%D0%03/%D0%93%D0%B4%D0%B5%20%D0%BC%D1%83%D1%81%D0%BE%D1%80%D0%BA%D0%B0.mov
     """
     # Сначала декодируем URL если он уже содержит кодированные части
     decoded_url = url.replace('%20', ' ').replace('%2F', '/').replace('%3A', ':').replace('%2C', ',').replace('%3D', '=')
@@ -115,8 +119,110 @@ def extract_filenames(urls):
     return filenames
 
 
+mapping_deal_status={
+    'C7:PREPARATION': 'Гость заехал',
+    'C7:UC_3EBBY1': 'За 15 мин ничего не прислал',
+    'C7:PREPAYMENT_INVOICE': 'Проверка оплаты из бота (если гость отправил скрин платежа)',
+
+}
+
+
+# mapping_deal_status={
+#     '14': 'Заключен',
+#     '13': 'Сделка отменена',
+#     '12': 'Сделка отменена',
+#     '11': 'Сделка отменена',
+#     '10': 'Сделка отменена',
+# }
+
+def extract_text_from_docx(file_path):
+    """
+    Извлекает весь текст из docx файла
+    
+    Args:
+        file_path (str): Путь к docx файлу
+        
+    Returns:
+        str: Весь текст из документа
+    """
+    try:
+        from docx import Document
+    except ImportError:
+        raise ImportError("Библиотека python-docx не установлена. Установите её командой 'uv add python-docx'")
+    
+    try:
+        doc = Document(file_path)
+        full_text = []
+        
+        # Извлекаем текст из каждого параграфа
+        for para in doc.paragraphs:
+            full_text.append(para.text)
+        
+        # Извлекаем текст из таблиц
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    full_text.append(cell.text)
+        
+        return '\n'.join(full_text)
+    except Exception as e:
+        return f"Ошибка при извлечении текста: {str(e)}"
+    
+
+def convert_heic_to_jpg(input_path, output_path=None):
+    """
+    Конвертирует изображение из формата HEIC в формат JPG используя только Python библиотеки
+    
+    Args:
+        input_path (str): Путь к HEIC файлу
+        output_path (str, optional): Путь для сохранения JPG файла. 
+                                    Если не указан, будет создан файл с тем же именем, но с расширением .jpg
+    
+    Returns:
+        str: Путь к созданному JPG файлу или сообщение об ошибке
+    """
+    # Если путь для сохранения не указан, создаем его из исходного пути
+    if output_path is None:
+        output_path = input_path.rsplit('.', 1)[0] + '.jpg'
+    
+    try:
+        # Пытаемся импортировать библиотеку pillow_heif
+        try:
+            import pillow_heif
+            from PIL import Image
+        except ImportError:
+            return "Ошибка: Необходимые библиотеки не установлены. Установите их командой: pip install pillow-heif Pillow"
+        
+        # Регистрируем HEIF декодер в Pillow
+        pillow_heif.register_heif_opener()
+        
+        # Открываем HEIC файл через Pillow (работает благодаря зарегистрированному декодеру)
+        img = Image.open(input_path)
+        
+        # Если изображение в режиме RGBA, конвертируем в RGB
+        if img.mode == 'RGBA':
+            img = img.convert('RGB')
+            
+        # Сохраняем в формате JPEG
+        img.save(output_path, format='JPEG', quality=95)
+        
+        return output_path
+        
+    except Exception as e:
+        return f"Ошибка при конвертации HEIC в JPG: {str(e)}"
+
+
 if __name__ == '__main__':
-    url='https://docs.yandex.ru/docs/view?url=ya-disk-public%3A%2F%2FED72Np%2FfsnHmFP33Ep0%2BkOUdjFQQAs9J%2FKvkBTN4qWxuSujpRlCytnY3t952176lSoayq%2FJ6bpmRyOJonT3VoXnDag%3D%3D%3A%2FАдреса%2C%20Инструкции%2FМалевич(Трамвайный%20пер.%202%20кор.7-237).docx&name=Малевич(Трамвайный%20пер.%202%20кор.7-237).docx'
-    get_path_to_file_instruction(url, returnIsUrl=True)
-    url="https://disk.yandex.ru/d/GdBBbAgu7АFSFQ/ИНФО%20ПО%20КВАРТИРАМ/Азина%2022%20корп.2%20-198%20(11%20этаж)/Как%20выглядит%20квартира.mov,https://disk.yandex.ru/d/GdBBbAgu7АFSFQ/ИНФО%20ПО%20КВАРТИРАМ/Азина%2022%20корп.2%20-198%20(11%20этаж)/Номер%20охраны.JPG,https://disk.yandex.ru/d/GdBBbAgu7АFSFQ/ИНФО%20ПО%20КВАРТИРАМ/Азина%2022%20корп.2%20-198%20(11%20этаж)/Про%20ТВ%20в%20спальне.JPG"
-    get_path_to_file_info(url, returnIsUrl=True)
+    path='/8 марта 204д - 116 (16 этаж)/Где_роутер_и_щиток.heic'
+    a=convert_heic_to_jpg(path)
+    print(a)
+    # # a=get_path_to_file_instruction(url, returnIsUrl=True)
+    # # pprint(a)
+    # # a=get_path_to_file_info(url, returnIsUrl=True)
+    # a=get_path_to_file_info(url, returnIsUrl=False)
+    # pprint(a)
+    # MAIN_PATH='✅ИНСТРУКЦИИ и ИНФО по крвартирам'
+    # b=['/ИНФО ПО КВАРТИРАМ/Азина 22 корп.2 -198 (11 этаж)/Как выглядит квартира.mov',
+    #  '/ИНФО ПО КВАРТИРАМ/Азина 22 корп.2 -198 (11 этаж)/Номер охраны.JPG',
+    #  '/ИНФО ПО КВАРТИРАМ/Азина 22 корп.2 -198 (11 этаж)/Про ТВ в спальне.JPG']
+

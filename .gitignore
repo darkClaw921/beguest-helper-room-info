@@ -12,4 +12,6 @@ wheels/
 # Google Sheets
 profzaboru-5f6f677a3cd8.json
 beget-test-456816-c17398de9334.json
-logs
+file_id_cache.json
+logs/*
+videos/*
