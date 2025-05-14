@@ -1,6 +1,15 @@
 from pprint import pprint
 from urllib.parse import quote,unquote
+
+import requests
 from test import encode_yandex_url
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+IP_CHAT_ROOM=os.getenv('IP_CHAT_ROOM')
+WEBHOOK_API_TOKEN=os.getenv('WEBHOOK_API_TOKEN')
 
 def get_path_to_file_instruction(url, returnIsUrl=False)->list[str]:
     """
@@ -210,12 +219,105 @@ def convert_heic_to_jpg(input_path, output_path=None):
         
     except Exception as e:
         return f"Ошибка при конвертации HEIC в JPG: {str(e)}"
+#  Примеры команд curl для работы с webhook API чата
 
+# # 1. Отправка сообщения от менеджера клиенту
+# # Этот запрос имитирует отправку сообщения от менеджера клиенту через внешнюю систему
+# curl -X POST "http://localhost:8000/api/webhook/send-message" \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "telegram_id": 123456789, 
+#     "text": "Здравствуйте! Это сообщение от менеджера через API.", 
+#     "token": "your-webhook-api-token"
+#   }'
+
+# # 2. Отправка сообщения от клиента менеджеру
+# # Этот запрос имитирует отправку сообщения от клиента в систему
+# # curl -X POST "http://localhost:8000/api/webhook/client-message" \
+# curl -X POST "http://localhost:8000/api/webhook/client-message" \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "telegram_id": 400923372, 
+#     "text": "Здравствуйте! Это сообщение от клиента через API.", 
+#     "token": "your-secret-api-token-here", 
+#     "first_name": "Иван", 
+#     "last_name": "Иванов", 
+#     "username": "ivanov"
+#   }'
+
+# # 3. Отправка сообщения от клиента менеджеру без дополнительных данных
+# # В этом случае будут использованы значения по умолчанию или данные из существующей записи пользователя
+# curl -X POST "http://localhost:8000/api/webhook/client-message" \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "telegram_id": 123456789, 
+#     "text": "Это еще одно сообщение от клиента.", 
+#     "token": "your-webhook-api-token"
+#   }'
+
+# Примечание: замените "your-webhook-api-token" на актуальный токен из .env файла
+# и при необходимости измените URL, если ваш сервер запущен на другом порту или адресе. 
+def send_message_to_client(telegram_id, text):
+    """Отправляет сообщение пользователю в телеграмм"""
+    url=f'http://{IP_CHAT_ROOM}/api/webhook/send-message'
+    data={
+        'telegram_id': telegram_id,
+        'text': text,
+        'token': WEBHOOK_API_TOKEN
+    }
+    # print(data)
+    response= requests.post(url, json=data)
+    # pprint(response)
+    return response.json()
+
+
+def send_first_message_to_manager(telegram_id, text, first_name, last_name, username):
+    """Отправляет первое сообщение менеджеру в чат на сайте для регистрации пользователя"""
+    url=f'http://{IP_CHAT_ROOM}/api/webhook/client-message'
+    data={
+        'telegram_id': telegram_id,
+        'text': text,
+        'token': WEBHOOK_API_TOKEN,
+        'first_name': first_name,
+        'last_name': last_name,
+        'username': username
+    }
+    response= requests.post(url, json=data)
+    return response.json()
+
+def send_message_to_manager(telegram_id, text):
+    """Отправляет сообщение менеджеру в чат на сайте"""
+    url=f'http://{IP_CHAT_ROOM}/api/webhook/client-message'
+    data={
+        'telegram_id': telegram_id,
+        'text': text,
+        'token': WEBHOOK_API_TOKEN
+    }
+    response= requests.post(url, json=data)
+    return response.json()
+
+
+def send_file_message_to_manager(telegram_id, name_file, data_file, text='Файл отправлен'):
+    """Отправляет файл менеджеру в чат на сайте"""
+    url=f'http://{IP_CHAT_ROOM}/api/webhook/client-message'
+    data={
+        'telegram_id': telegram_id,
+        'text': text,
+        'token': WEBHOOK_API_TOKEN,
+        'file': {
+            'name': name_file,
+            'data': data_file,
+        },
+    }
+    response= requests.post(url, json=data)
+    return response.json()
 
 if __name__ == '__main__':
-    path='/8 марта 204д - 116 (16 этаж)/Где_роутер_и_щиток.heic'
-    a=convert_heic_to_jpg(path)
-    print(a)
+    # path='/8 марта 204д - 116 (16 этаж)/Где_роутер_и_щиток.heic'
+    # a=convert_heic_to_jpg(path)
+    # print(a)
+    # send_message_to_client(400923372, 'Здравствуйте! Это сообщение от клиента через API.')
+    send_message_to_manager(400923372, 'Здравствуйте! Это сообщение от менеджера через API. от бота')
     # # a=get_path_to_file_instruction(url, returnIsUrl=True)
     # # pprint(a)
     # # a=get_path_to_file_info(url, returnIsUrl=True)

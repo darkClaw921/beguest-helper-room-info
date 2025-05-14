@@ -18,12 +18,13 @@ from loguru import logger
 import requests
 from workGS import Sheet
 from workKeyboard import get_keyboard, url_mapping
-from workBitrix import find_contact_by_phone, find_deal_by_contact_id, update_deal_status
+from workBitrix import find_contact_by_phone, find_deal_by_contact_id, update_deal_status, update_telegram_id, Deal, is_deal_status
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from typing import Dict, Any, Callable, Awaitable
 from yadisk_downloader import YandexDiskDownloader
-from helper import extract_text_from_docx, convert_heic_to_jpg
+from helper import extract_text_from_docx, convert_heic_to_jpg, send_message_to_manager, send_message_to_manager, send_first_message_to_manager, send_file_message_to_manager
+# from dataclasses import dataclass
 logger.add("logs/handlers_{time}.log",format="{time} - {level} -{file}:{line} - {message}", rotation="100 MB", retention="10 days", level="DEBUG")
 load_dotenv()
 TOKEN = os.getenv('TELEGRAM_TOKEN')
@@ -39,14 +40,11 @@ s=Sheet(jsonPath='beget-test-456816-c17398de9334.json',
 # Словарь для хранения информации о комнатах по chat_id
 user_rooms = {}
 
+
+
 # infoRoom=s.get_prepare_info_room('8 марта 204д - 116 (16 этаж)')
 
 USER_PHONES={
-    '79190072351':{
-        'telegram_id':400923372,
-        'deal_id':22215,
-        'status':'C7:PREPARATION',
-    }
 }
 
 
@@ -105,15 +103,19 @@ router.message.middleware(RegistrationMiddleware())
 @router.message(Command('start'))
 async def start(message: Message, state: FSMContext):
     await state.set_state(Form.phone)
-    await message.answer('Пожалуйста введите ваш номер телефона(начиная с 7 без пробелов), который вы указывали при бронировании\nНапример: 79190072351')
+    message_text=f'Пожалуйста введите ваш номер телефона(начиная с 7 без пробелов), который вы указывали при бронировании\nНапример: 79190072351'
+    await message.answer(message_text)
+    send_first_message_to_manager(message.from_user.id, message_text, str(message.from_user.first_name), str(message.from_user.last_name), str(message.from_user.username))
 
 @router.message(Form.phone)
 async def process_phone(message: Message, state: FSMContext):
     phone = message.text.strip()
-    
+    send_message_to_manager(message.from_user.id, f'🤖 Пользователь ввёл номер телефона: {phone}')
     # Проверка формата телефона
     if not re.match(r'^7\d{10}$', phone):
-        await message.answer('Неверный формат номера. Пожалуйста, введите номер, начинающийся с 7 и состоящий из 11 цифр.\nНапример: 79190072351')
+        message_text='Неверный формат номера. Пожалуйста, введите номер, начинающийся с 7 и состоящий из 11 цифр.\nНапример: 79190072351'
+        await message.answer(message_text)
+        send_message_to_manager(message.from_user.id, message_text)
         return
     
     # Сохраняем телефон в состоянии
@@ -124,29 +126,58 @@ async def process_phone(message: Message, state: FSMContext):
         # Если нет, то ищем контакт в Битриксе
         contact = await find_contact_by_phone(phone)
         if not contact:
-            await message.answer('Номер не найден в системе. Пожалуйста, проверьте номер или свяжитесь с администратором.')
+            message_text='Номер не найден в системе. Пожалуйста, проверьте номер или свяжитесь с администратором.'
+            await message.answer(message_text)
+            send_message_to_manager(message.from_user.id, message_text)
             return
         
         # Находим сделку по ID контакта
         deal = await find_deal_by_contact_id(contact[0]['ID'])
         if not deal:
-            await message.answer('Сделка не найдена. Пожалуйста, свяжитесь с администратором.')
+            message_text='Сделка не найдена. Пожалуйста, свяжитесь с администратором.'
+            await message.answer(message_text)
+            send_message_to_manager(message.from_user.id, message_text)
             return
         logger.debug(f'deal: {deal}')
         # Добавляем пользователя в словарь
         USER_PHONES[phone] = {
             'telegram_id': message.from_user.id,
             'deal_id': deal[0]['ID'],
-            'status': deal[0]['STAGE_ID']
+            'status': deal[0]['STAGE_ID'],
+            'room_name':deal[0][Deal.room_name] # Название квартиры 
         }
+        message_text=f'Вы успешно зарегистрированы в системе, вам осталось оплатить {deal[0][Deal.ostatoc_payment]} рублей.\n\nПришлите скрин платежа'
+        await bot.send_message(chat_id=message.from_user.id,
+                               text=message_text)
+        chat_room_id=send_message_to_manager(message.from_user.id, message_text)
+        try:
+            chat_room_id=chat_room_id['data']['chat_id']
+        except:
+            chat_room_id='None'
+        await update_telegram_id(dealID=deal[0]['ID'],telegram_id=message.from_user.id, chat_room_id=chat_room_id)
+
+
+        
+    await state.set_state(Form.apartment)
+        
     
     # Переходим к вводу названия квартиры
-    await state.set_state(Form.apartment)
-    await message.answer(f'Пришлите название квартиры из списка квартир в таблице {SHEET_URL}')
+    # await state.set_state(Form.apartment)
+    # await message.answer(f'Пришлите название квартиры из списка квартир в таблице {SHEET_URL}')
 
-@router.message(Form.apartment)
+
+
+@router.message(Command('info'))
 async def get_info_room(message: Message, state: FSMContext):
-    infoRoom = s.get_prepare_info_room(message.text)
+    phone=await state.get_data()
+    phone=phone['phone']
+    if not await is_deal_status(dealID=USER_PHONES[phone]['deal_id'],status=Deal.Status.prozivaet):
+        message_text='Ваш платеж пока не проверен администрацией. Пожалуйста, попробуйте позже.\nПосле проверки вы сможете получить доступ к информации о квартире через команду /info'
+        await message.answer(message_text)
+        send_message_to_manager(message.from_user.id, message_text)
+        return
+
+    infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])
     logger.info(f'infoRoom: {infoRoom}')
     keyboard = get_keyboard(infoRoom)
     
@@ -154,9 +185,10 @@ async def get_info_room(message: Message, state: FSMContext):
     user_rooms[message.from_user.id] = infoRoom
     
     # Очищаем состояние
-    await state.clear()
-    
-    await message.answer('Информация о квартире', reply_markup=keyboard)
+    # await state.clear()
+    message_text='Информация о квартире'
+    await message.answer(message_text, reply_markup=keyboard)
+    send_message_to_manager(message.from_user.id, message_text)
 
 # Обработчик для файлов и фотографий
 @router.message(F.photo | F.document)
@@ -171,17 +203,46 @@ async def process_file(message: Message):
             break
     
     if not phone:
-        await message.answer('Пожалуйста, сначала введите ваш номер телефона с помощью команды /start')
+        message_text='Пожалуйста, сначала введите ваш номер телефона с помощью команды /start'
+        await message.answer(message_text)
+        send_message_to_manager(message.from_user.id, message_text)
         return
     
     # Обновляем статус сделки
     deal_id = USER_PHONES[phone]['deal_id']
-    await update_deal_status(deal_id, 'C7:PREPAYMENT_INVOICE')
-    
+    # Сохраняем фото в папку photos
+    # pprint(message)
+    # filePath = f'files/{phone}.{message.photo[-1].file_extension}'
+    if message.photo:
+        file_info = await bot.get_file(message.photo[-1].file_id)
+        pprint(file_info)
+        fileID=message.photo[-1].file_id
+        file_extension = file_info.file_path.split('.')[-1]
+        # await message.photo[-1].download(filePath)
+    elif message.document:
+        file_info = await bot.get_file(message.document.file_id)
+        pprint(file_info)
+        fileID=message.document.file_id
+        file_extension = file_info.file_path.split('.')[-1]
+
+    filePath = f'files/{phone}.{file_extension}'
+    await bot.download(fileID,filePath)
+
+    await update_deal_status(deal_id, Deal.Status.check_payment,filePath)
+
+    #кодируем файл base64
+    import base64
+    with open(filePath, 'rb') as file:
+        data = file.read()
+    data = base64.b64encode(data).decode('utf-8')
+    name_file=filePath.split('/')[-1]
+    send_file_message_to_manager(message.from_user.id, name_file, data)
     # Обновляем статус в словаре
-    USER_PHONES[phone]['status'] = 'C7:PREPAYMENT_INVOICE'
-    
-    await message.answer('Спасибо! Ваш платеж отправлен на проверку.')
+    USER_PHONES[phone]['status'] = Deal.Status.check_payment
+    message_text='Спасибо! Ваш платеж отправлен на проверку. После провеки вы сможете получить доступ к информации о квартире через команду /info'
+    await message.answer(message_text)
+    send_message_to_manager(message.from_user.id, message_text)
+    send_message_to_manager(message.from_user.id, '🤖 Пользователь отправил файл, просмотреть его вы можете в сделке')
 
 @router.callback_query(F.data.startswith("show_"))
 async def show_submenu(callback: CallbackQuery):
@@ -193,7 +254,9 @@ async def show_submenu(callback: CallbackQuery):
     # Получаем данные о комнате для этого пользователя
     user_data = user_rooms.get(callback.from_user.id)
     if not user_data:
-        await callback.answer("Информация устарела, начните заново")
+        message_text='Информация устарела, начните заново'
+        await callback.answer(message_text)
+        send_message_to_manager(callback.from_user.id, message_text)
         return
     
     # logger.info(f'Данные пользователя: {user_data}')
@@ -211,7 +274,9 @@ async def back_to_main(callback: CallbackQuery):
     # logger.info(f'callback: {callback}')
     user_data = user_rooms.get(callback.from_user.id)
     if not user_data:
-        await callback.answer("Информация устарела, начните заново")
+        message_text='Информация устарела, начните заново'
+        await callback.answer(message_text)
+        send_message_to_manager(callback.from_user.id, message_text)
         return
     
     # Создаем основную клавиатуру
@@ -259,7 +324,9 @@ async def download_and_send_file(callback: CallbackQuery):
     file_path = url_mapping.get(url_id)
     if not file_path:
         logger.error(f'Не найден путь для ID: {url_id}')
-        await callback.message.answer("Ошибка: не удалось найти файл. Попробуйте позже.")
+        message_text='Ошибка: не удалось найти файл. Попробуйте позже.'
+        await callback.message.answer(message_text)
+        send_message_to_manager(callback.from_user.id, message_text)
         await callback.answer()
         return
     
@@ -391,13 +458,17 @@ async def download_and_send_file(callback: CallbackQuery):
             
                 # file_path=
             if not success:
-                await callback.message.answer("Не удалось скачать файл. Пожалуйста, попробуйте позже.")
+                message_text='Не удалось скачать файл. Пожалуйста, попробуйте позже.'
+                await callback.message.answer(message_text)
+                send_message_to_manager(callback.from_user.id, message_text)
                 await callback.answer()
                 return
                 
         except Exception as e:
             logger.error(f"Ошибка при скачивании файла: {e}")
-            await callback.message.answer("Произошла ошибка при скачивании. Пожалуйста, попробуйте позже.")
+            message_text='Произошла ошибка при скачивании. Пожалуйста, попробуйте позже.'
+            await callback.message.answer(message_text)
+            send_message_to_manager(callback.from_user.id, message_text)
             await callback.answer()
             return
     
@@ -460,10 +531,16 @@ async def download_and_send_file(callback: CallbackQuery):
         
     except Exception as e:
         logger.error(f"Ошибка при отправке файла: {e}")
-        await callback.message.answer("Не удалось отправить файл. Возможно, файл слишком большой.")
+        message_text='Не удалось отправить файл. Возможно, файл слишком большой. Обратитесь в тех. поддержку'
+        await callback.message.answer(message_text)
+        send_message_to_manager(callback.from_user.id, message_text)
     
     await callback.answer()
 
-
+#обробатываем просто сообщение
+@router.message()
+async def handle_text_message(message: types.Message):
+    # await message.answer('Вы отправили простое сообщение')
+    send_message_to_manager(message.from_user.id, f'{message.text}')
 
 

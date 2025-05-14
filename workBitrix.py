@@ -1,3 +1,4 @@
+import base64
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pprint import pprint
@@ -7,6 +8,25 @@ import time
 import asyncio
 
 from tqdm import tqdm
+mapping_deal_status={
+    'C7:PREPARATION': 'Гость заехал',
+    'C7:UC_3EBBY1': 'За 15 мин ничего не прислал',
+    'C7:PREPAYMENT_INVOICE': 'Проверка оплаты из бота (если гость отправил скрин платежа)',
+}
+@dataclass
+class Deal:
+    telegram_id:str='UF_CRM_1747164098729'
+    deal_id:str='ID'
+    status:str='STAGE_ID'
+    room_name: str='UF_CRM_ROOM_TYPE_NAME'
+    ostatoc_payment:str='UF_CRM_1715183997779'
+    file_payment:str='UF_CRM_1747158628163'
+    chat_room:str='UF_CRM_1747245296634'
+    class Status:
+        guest_zaehal:str='C7:PREPARATION'
+        guest_no_send_payment:str='C7:UC_3EBBY1'
+        check_payment:str='C7:PREPAYMENT_INVOICE'
+        prozivaet:str='C7:EXECUTING'
 
 NAME_APP='H_'
 import os
@@ -15,7 +35,7 @@ load_dotenv()
 WEBHOOK=os.getenv('WEBHOOK')
 bit = BitrixAsync(WEBHOOK, ssl=False)
 print(f'{WEBHOOK=}')
-
+IP_CHAT_ROOM=os.getenv('IP_CHAT_ROOM')
 # Работа с Deal
 async def get_deal(dealID):
     items={ 
@@ -692,7 +712,7 @@ async def get_all_department()->list[dict]:
     # items={
     #     'filter':{
     #         '>ID':0,
-    #     },
+    #     },g
     #     'select':['*', 'UF_*'],
     # }
     department=await bit.get_all('department.get')
@@ -861,30 +881,58 @@ async def find_deal_by_contact_id(contactID:int):
         'filter':{
             'CONTACT_ID':contactID,
         },
-        'select':['ID','STAGE_ID','TITLE','*'],
+        'select':['ID','STAGE_ID','TITLE','*',Deal.file_payment,Deal.room_name,Deal.ostatoc_payment,Deal.telegram_id],
     }
     deal=await bit.get_all('crm.deal.list',params=items)
     return deal
 
 
-async def update_deal_status(deal_id:int,status:str):
+async def update_deal_status(deal_id:int,status:str,filePath:str=None):
     items={
         'ID':deal_id,
         'fields':{
             'STAGE_ID':status,
         }
     }
-    await bit.call('crm.deal.update',params=items)
+    if filePath:
+        #кодируем файл base64
+        import base64
+        with open(filePath, 'rb') as file:
+            data = file.read()
+        data = base64.b64encode(data).decode('utf-8')
+        fileName=filePath.split('/')[-1]
+        items['fields'][Deal.file_payment]=[{'fileData':[fileName, data]}]
+    # pprint(items)
+    await bit.call('crm.deal.update',items=items)
 
-    
+async def update_telegram_id(dealID:int,telegram_id:int, chat_room_id:int):
+    items={
+        'ID':dealID,
+        'fields':{
+            Deal.telegram_id:telegram_id,
+            Deal.chat_room:f'http://{IP_CHAT_ROOM}/chats/{chat_room_id}',
+        }
+    }
+    await bit.call('crm.deal.update',items=items)
+
+async def is_deal_status(dealID:int,status:str):
+    deal=await get_deal(dealID=dealID)
+    # pprint(deal)
+    if deal['STAGE_ID']==status:
+        return True
+    else:
+        return False
+
 async def main():
-    contact=await find_contact_by_phone('79190072351')
-    pprint(contact)
-    # 1/0
-    # contactID=21215
-    deal=await find_deal_by_contact_id(contact[0]['ID'])
-    # deal=await find_deal_by_contact_id(contactID)
-    pprint(deal)
+    a=await is_deal_status(dealID=22215,status=Deal.Status.check_payment)
+    pprint(a)
+    # contact=await find_contact_by_phone('79190072351')
+    # pprint(contact)
+    # # 1/0
+    # # contactID=21215
+    # deal=await find_deal_by_contact_id(contact[0]['ID'])
+    # # deal=await find_deal_by_contact_id(contactID)
+    # pprint(deal)
 
 
 if __name__ == '__main__':
