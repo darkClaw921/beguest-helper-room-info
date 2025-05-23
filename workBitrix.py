@@ -869,11 +869,17 @@ async def find_contact_by_phone(phone:str):
         },
         'select':['PHONE','ID','NAME'],
     }
-    pprint(items)
+    # pprint(items)
     # 1/0
     contact=await bit.get_all('crm.contact.list',params=items)
     # contact=await bit.call('crm.contact.list',items=items)
     # pprint(contact)
+    if contact:
+        return contact
+    else:
+        items['filter']['PHONE']='+'+phone
+        contact=await bit.get_all('crm.contact.list',params=items)
+        
     return contact
 
 async def find_deal_by_contact_id(contactID:int):
@@ -924,10 +930,10 @@ async def is_deal_status(dealID:int,status:str):
         return False
 
 async def main():
-    a=await is_deal_status(dealID=22215,status=Deal.Status.check_payment)
-    pprint(a)
-    # contact=await find_contact_by_phone('79190072351')
-    # pprint(contact)
+    # a=await is_deal_status(dealID=22215,status=Deal.Status.check_payment)
+    # pprint(a)
+    contact=await find_contact_by_phone('79321213415')
+    pprint(contact)
     # # 1/0
     # # contactID=21215
     # deal=await find_deal_by_contact_id(contact[0]['ID'])
