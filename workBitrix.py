@@ -863,6 +863,9 @@ async def get_comment_task(taskID:int):
 
 
 async def find_contact_by_phone(phone:str):
+    
+    phone=phone[1:]
+
     items={
         'filter':{
             'PHONE':phone,
@@ -871,15 +874,20 @@ async def find_contact_by_phone(phone:str):
     }
     # pprint(items)
     # 1/0
-    contact=await bit.get_all('crm.contact.list',params=items)
+    # contact=await bit.get_all('crm.contact.list',params=items,)
     # contact=await bit.call('crm.contact.list',items=items)
     # pprint(contact)
-    if contact:
-        return contact
-    else:
-        items['filter']['PHONE']='+'+phone
+    startPhones=['+7','8','7','']
+    for startPhone in startPhones:
+        items['filter']['PHONE']=startPhone+phone
+        pprint(items)
         contact=await bit.get_all('crm.contact.list',params=items)
-        
+        # pprint(contact)
+        if contact:
+            return contact
+        else:
+            continue
+    
     return contact
 
 async def find_deal_by_contact_id(contactID:int):
