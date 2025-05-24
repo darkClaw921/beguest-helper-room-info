@@ -282,7 +282,7 @@ def send_first_message_to_manager(telegram_id, text, first_name, last_name, user
         'last_name': last_name,
         'username': username
     }
-    response= requests.post(url, json=data)
+    response= requests.post(url, json=data, timeout=1)
     return response.json()
 
 def send_message_to_manager(telegram_id, text):
@@ -293,7 +293,7 @@ def send_message_to_manager(telegram_id, text):
         'text': text,
         'token': WEBHOOK_API_TOKEN
     }
-    response= requests.post(url, json=data)
+    response= requests.post(url, json=data, timeout=1)
     return response.json()
 
 

@@ -103,12 +103,13 @@ router.message.middleware(RegistrationMiddleware())
 @router.message(Command('start'))
 async def start(message: Message, state: FSMContext):
     await state.set_state(Form.phone)
-    message_text=f'Пожалуйста введите ваш номер телефона(начиная с 7 без пробелов), который вы указывали при бронировании\nНапример: 79190072351'
+    message_text=f'Пожалуйста введите ваш номер телефона (начиная с 7 без пробелов), который вы указывали при бронировании\nНапример: 79190072351'
     await message.answer(message_text)
     send_first_message_to_manager(message.from_user.id, message_text, str(message.from_user.first_name), str(message.from_user.last_name), str(message.from_user.username))
 
 @router.message(Form.phone)
 async def process_phone(message: Message, state: FSMContext):
+    global USER_PHONES
     phone = message.text.strip()
     send_message_to_manager(message.from_user.id, f'🤖 Пользователь ввёл номер телефона: {phone}')
     # Проверка формата телефона
@@ -144,9 +145,19 @@ async def process_phone(message: Message, state: FSMContext):
             'telegram_id': message.from_user.id,
             'deal_id': deal[0]['ID'],
             'status': deal[0]['STAGE_ID'],
-            'room_name':deal[0][Deal.room_name] # Название квартиры 
+            'room_name':deal[0][Deal.room_name] # Название квартиры
+             
         }
-        message_text=f'Вы успешно зарегистрированы в системе, вам осталось оплатить {deal[0][Deal.ostatoc_payment]} рублей.\n\nПришлите скрин платежа'
+        # message_text=f'Вы успешно зарегистрированы в системе, вам осталось оплатить {deal[0][Deal.ostatoc_payment]} рублей.\n\nПришлите скрин платежа'
+        message_text=f"""Вы успешно зарегистрированы в системе. 
+
+Остаток оплаты за проживание {deal[0][Deal.ostatoc_payment]} рублей.
+Оплатить можете по реквизитам:
+1111-2222-3333-4444
+
+Для подтверждения оплаты пришлите файл или скриншот платежа.
+
+Для просмотра информации по заселению нажмите на /info"""
         await bot.send_message(chat_id=message.from_user.id,
                                text=message_text)
         chat_room_id=send_message_to_manager(message.from_user.id, message_text)
@@ -167,15 +178,36 @@ async def process_phone(message: Message, state: FSMContext):
 
 
 
+
 @router.message(Command('info'))
 async def get_info_room(message: Message, state: FSMContext):
     phone=await state.get_data()
     phone=phone['phone']
+
+
+    # if not await is_deal_status(dealID=USER_PHONES[phone]['deal_id'],status=Deal.Status.prozivaet):
+    #     message_text='Ваш платеж пока не проверен администрацией. Пожалуйста, попробуйте позже.\nПосле проверки вы сможете получить доступ к информации о квартире через команду /info'
+    #     await message.answer(message_text)
+    #     send_message_to_manager(message.from_user.id, message_text)
+    #     return
     if not await is_deal_status(dealID=USER_PHONES[phone]['deal_id'],status=Deal.Status.prozivaet):
-        message_text='Ваш платеж пока не проверен администрацией. Пожалуйста, попробуйте позже.\nПосле проверки вы сможете получить доступ к информации о квартире через команду /info'
-        await message.answer(message_text)
+        infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])
+        logger.info(f'infoRoom: {infoRoom}')
+        #оставляем только ключи Инструкция по заселению и Как попасть к дому
+        infoRoom = {
+            'Инструкция по заселению': infoRoom['Инструкция по заселению'],
+            'Как попасть к дому': infoRoom['Как попасть к дому']
+        }
+        keyboard = get_keyboard(infoRoom)
+        message_text="""Информация по заселению
+После подтверждения оплаты вам будет доступна полная информация по проживанию"""
+        await message.answer(message_text, reply_markup=keyboard)
         send_message_to_manager(message.from_user.id, message_text)
+        # message_text='Ваш платеж пока не проверен администрацией. Пожалуйста, попробуйте позже.\nПосле проверки вы сможете получить доступ к информации о квартире через команду /info'
+        # await message.answer(message_text)
+        # send_message_to_manager(message.from_user.id, message_text)
         return
+
 
     infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])
     logger.info(f'infoRoom: {infoRoom}')
@@ -239,7 +271,7 @@ async def process_file(message: Message):
     send_file_message_to_manager(message.from_user.id, name_file, data)
     # Обновляем статус в словаре
     USER_PHONES[phone]['status'] = Deal.Status.check_payment
-    message_text='Спасибо! Ваш платеж отправлен на проверку. После провеки вы сможете получить доступ к информации о квартире через команду /info'
+    message_text='Спасибо! Ваш платеж отправлен на проверку. После проверки вы сможете получить доступ к информации по проживанию.'
     await message.answer(message_text)
     send_message_to_manager(message.from_user.id, message_text)
     send_message_to_manager(message.from_user.id, '🤖 Пользователь отправил файл, просмотреть его вы можете в сделке')
