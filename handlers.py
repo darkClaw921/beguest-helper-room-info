@@ -107,6 +107,13 @@ async def start(message: Message, state: FSMContext):
     await message.answer(message_text)
     send_first_message_to_manager(message.from_user.id, message_text, str(message.from_user.first_name), str(message.from_user.last_name), str(message.from_user.username))
 
+@router.message(Command('manager'))
+async def start(message: Message, state: FSMContext):
+    await state.set_state(Form.phone)
+    message_text=f'Если у вас возникли вопросы, вы можете [Написать менеджеру WhatsApp](https://api.whatsapp.com/send?phone=79300356988)'
+    await message.answer(message_text)
+    send_first_message_to_manager(message.from_user.id, message_text, str(message.from_user.first_name), str(message.from_user.last_name), str(message.from_user.username))
+
 @router.message(Form.phone)
 async def process_phone(message: Message, state: FSMContext):
     global USER_PHONES

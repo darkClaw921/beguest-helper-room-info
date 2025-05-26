@@ -937,16 +937,51 @@ async def is_deal_status(dealID:int,status:str):
     else:
         return False
 
+async def send_notification_to_bitrix(telegram_id:int):
+    deal=await get_deal_by_telegram_id(telegram_id)
+
+    message=f'новое сообщение от [URL=https://beguest.bitrix24.ru/crm/deal/details/{deal['ID']}/]{deal[Deal.room_name]}[/URL] -> [URL={deal[Deal.chat_room]}]ссылка на чат[/URL]'
+    items={
+        'USER_ID':deal['ASSIGNED_BY_ID'],
+        'MESSAGE':message,
+    }
+    await bit.call('im.notify.personal.add',items=items)
+
+async def get_deal_by_telegram_id(telegram_id:int):
+    items={
+        'filter':{
+            Deal.telegram_id:telegram_id,
+            'STAGE_SEMANTIC_ID':'P'
+        },
+        'select':['TITLE','ID','ASSIGNED_BY_ID','UF_CRM_1747164098729',Deal.room_name,Deal.chat_room],
+        
+    }
+    # pprint(items)
+    result=await bit.get_all('crm.deal.list',params=items)
+    # pprint(result)
+    return result[0]
+
 async def main():
     # a=await is_deal_status(dealID=22215,status=Deal.Status.check_payment)
     # pprint(a)
-    contact=await find_contact_by_phone('79321213415')
+    # contact=await find_contact_by_phone('79321213415')
+    #https://apidocs.bitrix24.ru/api-reference/chats/messages/index.html
+    # message='новое сообщение от[URL=https://beguest.bitrix24.ru/crm/deal/details/23115/]Апартаменты на 8 марта 204Д 16[/URL] -> [URL=http://31.129.103.113:8000/chats/1]ссылка на чат[/URL]'
+    contact=await send_notification_to_bitrix(telegram_id=400923372)
     pprint(contact)
-    # # 1/0
-    # # contactID=21215
-    # deal=await find_deal_by_contact_id(contact[0]['ID'])
-    # # deal=await find_deal_by_contact_id(contactID)
-    # pprint(deal)
+# async def main():
+#     # a=await is_deal_status(dealID=22215,status=Deal.Status.check_payment)
+#     # pprint(a)
+#     # contact=await find_contact_by_phone('79321213415')
+#     #https://apidocs.bitrix24.ru/api-reference/chats/messages/index.html
+#     message='[URL=http://31.129.103.113:8000/chats/1]ссылка на чат[/URL]'
+#     contact=await send_notification_to_bitrix(userID=3719,message=f'Персональное уведомление {message}')
+#     pprint(contact)
+#     # # 1/0
+#     # # contactID=21215
+#     # deal=await find_deal_by_contact_id(contact[0]['ID'])
+#     # # deal=await find_deal_by_contact_id(contactID)
+#     # pprint(deal)
 
 
 if __name__ == '__main__':
