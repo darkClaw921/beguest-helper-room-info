@@ -202,8 +202,8 @@ async def get_info_room(message: Message, state: FSMContext):
         logger.info(f'infoRoom: {infoRoom}')
         #оставляем только ключи Инструкция по заселению и Как попасть к дому
         infoRoom = {
-            'Инструкция по заселению': infoRoom['Инструкция по заселению'],
-            'Как попасть к дому': infoRoom['Как попасть к дому']
+            '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
+            '🏠 Как попасть к дому': infoRoom['🏠 Как попасть к дому']
         }
         keyboard = get_keyboard(infoRoom)
         message_text="""Информация по заселению
@@ -218,6 +218,9 @@ async def get_info_room(message: Message, state: FSMContext):
 
     infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])
     logger.info(f'infoRoom: {infoRoom}')
+
+
+
     keyboard = get_keyboard(infoRoom)
     
     # Сохраняем данные о комнате для пользователя
