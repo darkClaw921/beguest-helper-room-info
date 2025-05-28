@@ -174,6 +174,26 @@ async def process_phone(message: Message, state: FSMContext):
             chat_room_id='None'
         await update_telegram_id(dealID=deal[0]['ID'],telegram_id=message.from_user.id, chat_room_id=chat_room_id)
     else:
+        contact = await find_contact_by_phone(phone)
+        if not contact:
+            message_text='Номер не найден в системе. Пожалуйста, проверьте номер или свяжитесь с администратором.'
+            await message.answer(message_text)
+            send_message_to_manager(message.from_user.id, message_text)
+            return
+        
+        # Находим сделку по ID контакта
+        deal = await find_deal_by_contact_id(contact[0]['ID'])
+        if not deal:
+            message_text='Сделка не найдена. Пожалуйста, свяжитесь с администратором.'
+            await message.answer(message_text)
+            send_message_to_manager(message.from_user.id, message_text)
+            return
+        logger.debug(f'deal: {deal}')
+        USER_PHONES[phone]['deal_id']=deal[0]['ID']
+        USER_PHONES[phone]['status']=deal[0]['STAGE_ID']
+        USER_PHONES[phone]['room_name']=deal[0][Deal.room_name]
+        
+        #telegram_id оставляем тот же
         message_text=f'Вы уже зарегистрированы в системе.Ваши апартаменты: {USER_PHONES[phone]['room_name']}. Пожалуйста, используйте команду /info для получения информации о квартире.'
         await message.answer(message_text)
         send_message_to_manager(message.from_user.id, message_text)
