@@ -966,7 +966,9 @@ async def get_deal_by_telegram_id(telegram_id:int):
 async def main():
     # a=await is_deal_status(dealID=22215,status=Deal.Status.check_payment)
     # pprint(a)
-    # contact=await find_contact_by_phone('79321213415')
+    contact=await find_contact_by_phone('79961748316')
+    pprint(contact)
+    1/0
     #https://apidocs.bitrix24.ru/api-reference/chats/messages/index.html
     # message='новое сообщение от[URL=https://beguest.bitrix24.ru/crm/deal/details/23115/]Апартаменты на 8 марта 204Д 16[/URL] -> [URL=http://31.129.103.113:8000/chats/1]ссылка на чат[/URL]'
     # contact=await send_notification_to_bitrix(telegram_id=400923372)
@@ -980,9 +982,9 @@ async def main():
 #     contact=await send_notification_to_bitrix(userID=3719,message=f'Персональное уведомление {message}')
 #     pprint(contact)
 #     # # 1/0
-      contactID=16317
-      deal=await find_deal_by_contact_id(contactID)
-      pprint(deal)
+    contactID=16317
+    deal=await find_deal_by_contact_id(contactID)
+    pprint(deal)
     # deal=await find_deal_by_contact_id(contactID)
 #     # pprint(deal)
 
