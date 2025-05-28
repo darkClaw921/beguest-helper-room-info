@@ -894,6 +894,8 @@ async def find_deal_by_contact_id(contactID:int):
     items={
         'filter':{
             'CONTACT_ID':contactID,
+            'STAGE_SEMANTIC_ID':'P',
+            'CATEGORY_ID':'7',
         },
         'select':['ID','STAGE_ID','TITLE','*',Deal.file_payment,Deal.room_name,Deal.ostatoc_payment,Deal.telegram_id],
     }
@@ -967,8 +969,8 @@ async def main():
     # contact=await find_contact_by_phone('79321213415')
     #https://apidocs.bitrix24.ru/api-reference/chats/messages/index.html
     # message='новое сообщение от[URL=https://beguest.bitrix24.ru/crm/deal/details/23115/]Апартаменты на 8 марта 204Д 16[/URL] -> [URL=http://31.129.103.113:8000/chats/1]ссылка на чат[/URL]'
-    contact=await send_notification_to_bitrix(telegram_id=400923372)
-    pprint(contact)
+    # contact=await send_notification_to_bitrix(telegram_id=400923372)
+    # pprint(contact)
 # async def main():
 #     # a=await is_deal_status(dealID=22215,status=Deal.Status.check_payment)
 #     # pprint(a)
@@ -978,9 +980,10 @@ async def main():
 #     contact=await send_notification_to_bitrix(userID=3719,message=f'Персональное уведомление {message}')
 #     pprint(contact)
 #     # # 1/0
-#     # # contactID=21215
-#     # deal=await find_deal_by_contact_id(contact[0]['ID'])
-#     # # deal=await find_deal_by_contact_id(contactID)
+      contactID=16317
+      deal=await find_deal_by_contact_id(contactID)
+      pprint(deal)
+    # deal=await find_deal_by_contact_id(contactID)
 #     # pprint(deal)
 
 
