@@ -8,11 +8,11 @@ import time
 import asyncio
 
 from tqdm import tqdm
-mapping_deal_status={
-    'C7:PREPARATION': 'Гость заехал',
-    'C7:UC_3EBBY1': 'За 15 мин ничего не прислал',
-    'C7:PREPAYMENT_INVOICE': 'Проверка оплаты из бота (если гость отправил скрин платежа)',
-}
+# mapping_deal_status={
+#     'C7:PREPARATION': 'Гость заехал',
+#     'C7:UC_3EBBY1': 'За 15 мин ничего не прислал',
+#     'C7:PREPAYMENT_INVOICE': 'Проверка оплаты из бота (если гость отправил скрин платежа)',
+# }
 @dataclass
 class Deal:
     telegram_id:str='UF_CRM_1747164098729'
@@ -23,15 +23,18 @@ class Deal:
     file_payment:str='UF_CRM_1747158628163'
     chat_room:str='UF_CRM_1747245296634'
     class Status:
-        guest_zaehal:str='C7:PREPARATION'
-        guest_no_send_payment:str='C7:UC_3EBBY1'
-        check_payment:str='C7:PREPAYMENT_INVOICE'
-        prozivaet:str='C7:EXECUTING'
+        guest_zaehal:str='C1:UC_KF562L'
+        guest_no_send_payment:str='C1:UC_UPYQD0'
+        check_payment:str='C1:UC_8MQAUR'
+        prozivaet:str='C1:PREPAYMENT_INVOICE'
 
 NAME_APP='H_'
 import os
 load_dotenv()
 
+# номер воронки в битриксе
+
+NEED_CATEGORY=1
 WEBHOOK=os.getenv('WEBHOOK')
 bit = BitrixAsync(WEBHOOK, ssl=False)
 print(f'{WEBHOOK=}')
@@ -895,7 +898,7 @@ async def find_deal_by_contact_id(contactID:int):
         'filter':{
             'CONTACT_ID':contactID,
             'STAGE_SEMANTIC_ID':'P',
-            'CATEGORY_ID':'7',
+            'CATEGORY_ID':NEED_CATEGORY,
         },
         'select':['ID','STAGE_ID','TITLE','*',Deal.file_payment,Deal.room_name,Deal.ostatoc_payment,Deal.telegram_id],
     }
