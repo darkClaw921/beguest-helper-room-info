@@ -18,7 +18,7 @@ from loguru import logger
 import requests
 from workGS import Sheet
 from workKeyboard import get_keyboard, url_mapping
-from workBitrix import find_contact_by_phone, find_deal_by_contact_id, update_deal_status, update_telegram_id, Deal, is_deal_status
+from workBitrix import find_contact_by_phone, find_deal_by_contact_id, is_deal_close, update_deal_status, update_telegram_id, Deal, is_deal_status
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from typing import Dict, Any, Callable, Awaitable
@@ -229,25 +229,31 @@ async def get_info_room(message: Message, state: FSMContext):
         infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])
         logger.info(f'infoRoom: {infoRoom}')
         #оставляем только ключи Инструкция по заселению и Как попасть к дому
-        try:
-            infoRoom = {
-            '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
-            '🏠 Как попасть к дому': infoRoom['🏠 Как попасть к дому']
-            }
-        except:
-            infoRoom = {
-            '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению']
-            # '🏠 Как попасть к дому': infoRoom['🏠 Как попасть к дому']
-            }
-        keyboard = get_keyboard(infoRoom)
-        message_text="""Информация по заселению
-После подтверждения оплаты вам будет доступна полная информация по проживанию"""
-        await message.answer(message_text, reply_markup=keyboard)
-        send_message_to_manager(message.from_user.id, message_text)
-        # message_text='Ваш платеж пока не проверен администрацией. Пожалуйста, попробуйте позже.\nПосле проверки вы сможете получить доступ к информации о квартире через команду /info'
-        # await message.answer(message_text)
-        # send_message_to_manager(message.from_user.id, message_text)
-        return
+        if not await is_deal_close(dealID=USER_PHONES[phone]['deal_id']):
+            try:
+                infoRoom = {
+                '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
+                '🏠 Как попасть к дому': infoRoom['🏠 Как попасть к дому']
+                }
+            except:
+                infoRoom = {
+                '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению']
+                # '🏠 Как попасть к дому': infoRoom['🏠 Как попасть к дому']
+                }
+            keyboard = get_keyboard(infoRoom)
+            message_text="""Информация по заселению
+    После подтверждения оплаты вам будет доступна полная информация по проживанию"""
+            await message.answer(message_text, reply_markup=keyboard)
+            send_message_to_manager(message.from_user.id, message_text)
+            # message_text='Ваш платеж пока не проверен администрацией. Пожалуйста, попробуйте позже.\nПосле проверки вы сможете получить доступ к информации о квартире через команду /info'
+            # await message.answer(message_text)
+            # send_message_to_manager(message.from_user.id, message_text)
+            return
+        else:
+            message_text='Ваш договор закрыт. Пожалуйста, свяжитесь с администратором.'
+            await message.answer(message_text)
+            send_message_to_manager(message.from_user.id, message_text)
+            return
 
 
     infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])

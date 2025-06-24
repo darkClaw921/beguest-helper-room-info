@@ -885,12 +885,12 @@ async def find_contact_by_phone(phone:str):
         items['filter']['PHONE']=startPhone+phone
         pprint(items)
         contact=await bit.get_all('crm.contact.list',params=items)
-        # pprint(contact)
+        pprint(contact)
         if contact:
             return contact
         else:
             continue
-    
+    pprint(contact)
     return contact
 
 async def find_deal_by_contact_id(contactID:int):
@@ -942,6 +942,15 @@ async def is_deal_status(dealID:int,status:str):
         return True
     else:
         return False
+
+async def is_deal_close(dealID:int):
+    deal=await get_deal(dealID=dealID)
+
+    if deal['STAGE_SEMANTIC_ID']=='F' or deal['STAGE_SEMANTIC_ID']=='S':
+        return True
+    else:
+        return False
+
 
 async def send_notification_to_bitrix(telegram_id:int):
     deal=await get_deal_by_telegram_id(telegram_id)
