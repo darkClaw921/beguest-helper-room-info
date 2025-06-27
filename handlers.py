@@ -245,6 +245,7 @@ async def get_info_room(message: Message, state: FSMContext):
     После подтверждения оплаты вам будет доступна полная информация по проживанию"""
             await message.answer(message_text, reply_markup=keyboard)
             send_message_to_manager(message.from_user.id, message_text)
+            send_message_to_manager(message.from_user.id, infoRoom)
             # message_text='Ваш платеж пока не проверен администрацией. Пожалуйста, попробуйте позже.\nПосле проверки вы сможете получить доступ к информации о квартире через команду /info'
             # await message.answer(message_text)
             # send_message_to_manager(message.from_user.id, message_text)
@@ -270,8 +271,9 @@ async def get_info_room(message: Message, state: FSMContext):
     # await state.clear()
     message_text='Информация о квартире'
     await message.answer(message_text, reply_markup=keyboard)
-    send_message_to_manager(message.from_user.id, message_text)
 
+    send_message_to_manager(message.from_user.id, message_text)
+    send_message_to_manager(message.from_user.id, keyboard.to_json())
 # Обработчик для файлов и фотографий
 @router.message(F.photo | F.document)
 async def process_file(message: Message):
@@ -346,8 +348,9 @@ async def show_submenu(callback: CallbackQuery):
     
     # Создаем клавиатуру для конкретного ключа
     keyboard = get_keyboard(user_data, filter_key=key)
-    
+    send_message_to_manager(callback.from_user.id, keyboard.to_json())
     await callback.message.edit_reply_markup(reply_markup=keyboard)
+
     await callback.answer()
 
 @router.callback_query(F.data == "back")
@@ -365,6 +368,7 @@ async def back_to_main(callback: CallbackQuery):
     keyboard = get_keyboard(user_data)
     
     await callback.message.edit_reply_markup(reply_markup=keyboard)
+    send_message_to_manager(callback.from_user.id, keyboard.to_json())
     await callback.answer()
 
 # Словарь для хранения file_id отправленных файлов
@@ -464,7 +468,7 @@ async def download_and_send_file(callback: CallbackQuery):
     if local_file_path in file_id_cache:
         cached_file_id = file_id_cache[local_file_path]
         logger.info(f"Найден закешированный file_id: {cached_file_id} для {local_file_path}")
-        
+        send_message_to_manager(callback.from_user.id, f'🤖 Пользователь запросил файл {file_caption}')
         try:
             # Отправляем файл по его file_id в зависимости от типа
             await callback.message.answer("Отправляю файл...")
@@ -507,7 +511,7 @@ async def download_and_send_file(callback: CallbackQuery):
     # Проверяем, существует ли файл локально
     if not os.path.isfile(local_file_path):
         await callback.message.answer(f"Скачиваю файл {file_caption}...")
-        
+        send_message_to_manager(callback.from_user.id, f'🤖 Пользователь запросил файл {file_caption}')
         try:
             # Инициализируем даунлоадер Яндекс Диска
             downloader = YandexDiskDownloader()
@@ -622,7 +626,7 @@ async def download_and_send_file(callback: CallbackQuery):
 #обробатываем просто сообщение
 @router.message()
 async def handle_text_message(message: types.Message):
-    # await message.answer('Вы отправили простое сообщение')
+    await message.answer('Если у вас есть вопрос, который нужно решить с администратором, для связи вы можете:\n\n- Позвонить по телефону: +79300356988\n- [Написать в WhatsApp](https://api.whatsapp.com/send?phone=79300356988)')
     send_message_to_manager(message.from_user.id, f'{message.text}')
 
 
