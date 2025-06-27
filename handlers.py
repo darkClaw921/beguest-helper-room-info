@@ -626,7 +626,10 @@ async def download_and_send_file(callback: CallbackQuery):
 #обробатываем просто сообщение
 @router.message()
 async def handle_text_message(message: types.Message):
-    await message.answer('Если у вас есть вопрос, который нужно решить с администратором, для связи вы можете:\n\n- Позвонить по телефону: +79300356988\n- [Написать в WhatsApp](https://api.whatsapp.com/send?phone=79300356988)')
+    text='Если у вас есть вопрос, который нужно решить с администратором, для связи вы можете:\n\n- Позвонить по телефону: +79300356988\n- [Написать в WhatsApp](https://api.whatsapp.com/send?phone=79300356988)'
+    await message.answer(text)
+    send_message_to_manager(message.from_user.id, text)
+
     send_message_to_manager(message.from_user.id, f'{message.text}')
 
 
