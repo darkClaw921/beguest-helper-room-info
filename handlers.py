@@ -175,8 +175,7 @@ async def process_phone(message: Message, state: FSMContext):
         deal_link=f'https://{DOMAIN_BITRIX}/crm/deal/details/{deal[0]['ID']}/'
         # additional_info=
         
-        await bot.send_message(chat_id=message.from_user.id,
-                               text=message_text)
+        
         
         chat_room_id=send_message_to_manager(message.from_user.id, message_text, apartments=apartments, deal_link=deal_link)
         try:
