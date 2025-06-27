@@ -43,7 +43,7 @@ user_rooms = {}
 
 
 # infoRoom=s.get_prepare_info_room('8 марта 204д - 116 (16 этаж)')
-
+DOMAIN_BITRIX=os.getenv('DOMAIN_BITRIX')
 USER_PHONES={
 }
 
@@ -171,7 +171,14 @@ async def process_phone(message: Message, state: FSMContext):
 Для просмотра информации по заселению нажмите на /info"""
         await bot.send_message(chat_id=message.from_user.id,
                                text=message_text)
-        chat_room_id=send_message_to_manager(message.from_user.id, message_text)
+        apartments=USER_PHONES[phone]['room_name']
+        deal_link=f'https://{DOMAIN_BITRIX}/crm/deal/details/{deal[0]['ID']}/'
+        # additional_info=
+        
+        await bot.send_message(chat_id=message.from_user.id,
+                               text=message_text)
+        
+        chat_room_id=send_message_to_manager(message.from_user.id, message_text, apartments=apartments, deal_link=deal_link)
         try:
             chat_room_id=chat_room_id['data']['chat_id']
         except:
@@ -219,7 +226,7 @@ async def get_info_room(message: Message, state: FSMContext):
     phone=await state.get_data()
     phone=phone['phone']
 
-
+    send_message_to_manager(message.from_user.id, '🤖 Пользователь запросил информацию о квартире /info')
     # if not await is_deal_status(dealID=USER_PHONES[phone]['deal_id'],status=Deal.Status.prozivaet):
     #     message_text='Ваш платеж пока не проверен администрацией. Пожалуйста, попробуйте позже.\nПосле проверки вы сможете получить доступ к информации о квартире через команду /info'
     #     await message.answer(message_text)

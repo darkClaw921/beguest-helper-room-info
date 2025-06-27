@@ -285,13 +285,14 @@ def send_first_message_to_manager(telegram_id, text, first_name, last_name, user
     response= requests.post(url, json=data, timeout=1)
     return response.json()
 
-def send_message_to_manager(telegram_id, text):
+def send_message_to_manager(telegram_id, text, **kwargs):
     """Отправляет сообщение менеджеру в чат на сайте"""
     url=f'http://{IP_CHAT_ROOM}/api/webhook/client-message'
     data={
         'telegram_id': telegram_id,
         'text': text,
-        'token': WEBHOOK_API_TOKEN
+        'token': WEBHOOK_API_TOKEN,
+        **kwargs
     }
     response= requests.post(url, json=data, timeout=1)
     return response.json()
