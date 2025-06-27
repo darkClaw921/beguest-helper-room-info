@@ -46,18 +46,35 @@ class YandexDiskDownloader:
         :param save_path: Путь сохранения файла на локальной машине
         :return: True если файл успешно скачан, иначе False
         """
+        downloadTrue=False
         try:
             # Убедимся, что директория существует
             # os.makedirs(os.path.dirname(save_path), exist_ok=True)
             
             logger.info(f"Скачивание файла '{file_path}' в '{save_path}'")
+            
             self.yadisk.download(file_path, save_path)
             
+            
             logger.info(f"Файл успешно скачан: {save_path}")
-            return True
+            downloadTrue=True
         except Exception as e:
             logger.error(f"Ошибка при скачивании файла '{file_path}': {e}")
-            return False
+            file_path=file_path.replace('_telegram', '')
+            
+            downloadTrue=False
+        
+        
+        if not downloadTrue:
+            file_path=file_path.replace('_telegram', '')
+            try:
+                self.yadisk.download(file_path, save_path)
+                downloadTrue=True
+            except Exception as e:
+                logger.error(f"Ошибка при скачивании файла '{file_path}': {e}")
+                downloadTrue=False
+        return downloadTrue
+        
     
     def get_download_link(self, file_path: str) -> str:
         """
@@ -182,7 +199,7 @@ if __name__ == "__main__":
     downloader = YandexDiskDownloader()
     # MAIN_PATH='disk:/✅ИНСТРУКЦИИ и ИНФО по крвартирам'
     MAIN_PATH='disk:/✅ИНСТРУКЦИИ и ИНФО по крвартирам'
-    file_path = f"{MAIN_PATH}/ИНФО ПО КВАРТИРАМ/8 марта 204д - 116 (16 этаж)/Как включать плиту.mov"
+    file_path = f"{MAIN_PATH}/ИНФО ПО КВАРТИРАМ/Фрунзе 31-127/Как включать плиту.mov"
     save_path = "квартира2_low.mov"
     # Проверяем существование файла
     # MAIN_PATH='/'
