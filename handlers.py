@@ -416,7 +416,7 @@ async def download_and_send_file(callback: CallbackQuery):
     file_path = url_mapping.get(url_id)
     if not file_path:
         logger.error(f'Не найден путь для ID: {url_id}')
-        message_text='Ошибка: не удалось найти файл. Попробуйте позже.'
+        message_text='Ошибка: не удалось найти файл. Попробуйте позже. Или попробуйте авторизироваться заново /start'
         await callback.message.answer(message_text)
         send_message_to_manager(callback.from_user.id, message_text)
         await callback.answer()
