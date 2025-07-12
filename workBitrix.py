@@ -976,6 +976,19 @@ async def get_deal_by_telegram_id(telegram_id:int):
     # pprint(result)
     return result[0]
 
+
+async def get_deal_status_and_category(dealID:int)->str:
+    """
+    Возвращает статус и категорию сделки
+    return: tuple(status, category)
+    """
+    deal=await get_deal(dealID=dealID)
+    if isinstance(deal, dict):
+        if deal.get("order0000000000"):
+            deal = deal["order0000000000"]
+
+    return deal['STAGE_ID'], deal['CATEGORY_ID']
+
 async def main():
     # a=await is_deal_status(dealID=22215,status=Deal.Status.check_payment)
     # pprint(a)

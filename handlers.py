@@ -18,7 +18,7 @@ from loguru import logger
 import requests
 from workGS import Sheet
 from workKeyboard import get_keyboard, url_mapping
-from workBitrix import find_contact_by_phone, find_deal_by_contact_id, is_deal_close, update_deal_status, update_telegram_id, Deal, is_deal_status
+from workBitrix import find_contact_by_phone, find_deal_by_contact_id, is_deal_close, update_deal_status, update_telegram_id, Deal, is_deal_status, get_deal_status_and_category 
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from typing import Dict, Any, Callable, Awaitable
@@ -53,6 +53,13 @@ mapping_deal_status={
     'C7:UC_3EBBY1': 'За 15 мин ничего не прислал',
     'C7:PREPAYMENT_INVOICE': 'Проверка оплаты из бота (если гость отправил скрин платежа)',
 }
+
+
+STATUS_DEAL_KAK_POPAST_K_DOMU=['C7:PREPARATION','C7:UC_3EBBY1','C1:NEW','C1:UC_BYZQTP']
+
+STATUS_DEAL_INFO_ZASELENIE=['C1:UC_NSUETZ','C1:UC_KF562L','C1:UC_UPYQD0','C1:UC_8MQAUR','C1:UC_11XNA1',]
+
+STATUS_DEAL_ALL_INFO=['C1:PREPAYMENT_INVOICE', 'C1:EXECUTING']
 
 class Form(StatesGroup):
     phone = State()
@@ -146,7 +153,7 @@ async def process_phone(message: Message, state: FSMContext):
             await message.answer(message_text)
             send_message_to_manager(message.from_user.id, message_text)
             return
-        logger.debug(f'deal: {deal}')
+        # logger.debug(f'deal: {deal}')
         # Добавляем пользователя в словарь
         USER_PHONES[phone] = {
             'telegram_id': message.from_user.id,
@@ -231,39 +238,71 @@ async def get_info_room(message: Message, state: FSMContext):
     #     await message.answer(message_text)
     #     send_message_to_manager(message.from_user.id, message_text)
     #     return
-    if not await is_deal_status(dealID=USER_PHONES[phone]['deal_id'],status=Deal.Status.prozivaet):
-        infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])
-        logger.info(f'infoRoom: {infoRoom}')
-        #оставляем только ключи Инструкция по заселению и Как попасть к дому
-        if not await is_deal_close(dealID=USER_PHONES[phone]['deal_id']):
-            try:
-                infoRoom = {
-                '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
-                '🏠 Как попасть к дому': infoRoom['🏠 Как попасть к дому']
-                }
-            except:
-                infoRoom = {
-                '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению']
-                # '🏠 Как попасть к дому': infoRoom['🏠 Как попасть к дому']
-                }
-            keyboard = get_keyboard(infoRoom)
-            message_text="""Информация по заселению
-    После подтверждения оплаты вам будет доступна полная информация по проживанию"""
-            await message.answer(message_text, reply_markup=keyboard)
-            send_message_to_manager(message.from_user.id, message_text)
-            send_message_to_manager(message.from_user.id, infoRoom)
-            # message_text='Ваш платеж пока не проверен администрацией. Пожалуйста, попробуйте позже.\nПосле проверки вы сможете получить доступ к информации о квартире через команду /info'
-            # await message.answer(message_text)
-            # send_message_to_manager(message.from_user.id, message_text)
-            return
-        else:
-            message_text='Ваш договор закрыт. Пожалуйста, свяжитесь с администратором.'
-            await message.answer(message_text)
-            send_message_to_manager(message.from_user.id, message_text)
-            return
-
-
+    status, category=await get_deal_status_and_category(USER_PHONES[phone]['deal_id'])
+    message_text='Информация о квартире'
     infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])
+    
+    if status in STATUS_DEAL_KAK_POPAST_K_DOMU or category in ['0', 0]:
+        infoRoom = {
+                # '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
+                '🏠 Как попасть к дому': infoRoom.get('🏠 Как попасть к дому', 'данный файл не существует')
+                }
+        message_text="""Информация как попасть к дому.
+
+За 10 минут до заезда вам будет доступна инструкция по заселению."""
+
+    elif status in STATUS_DEAL_INFO_ZASELENIE:
+        infoRoom = {
+                '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
+                '🏠 Как попасть к дому': infoRoom.get('🏠 Как попасть к дому', 'данный файл не существует')
+                }
+        message_text='Для доступа к инструкции по заселению нажмите на /info'
+    elif status in STATUS_DEAL_ALL_INFO:
+        infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])
+    else:
+        message_text="""Ваш договор закрыт. Пожалуйста, свяжитесь с администратором, для связи вы можете:
+
+- Позвонить по телефону: +79300356988
+- [Написать в WhatsApp](https://api.whatsapp.com/send?phone=79300356988)"""
+        await message.answer(message_text)
+        send_message_to_manager(message.from_user.id, message_text)
+        return 
+
+
+
+    # if not await is_deal_status(dealID=USER_PHONES[phone]['deal_id'],status=Deal.Status.prozivaet):
+    #     infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])
+    #     logger.info(f'infoRoom: {infoRoom}')
+    #     #оставляем только ключи Инструкция по заселению и Как попасть к дому
+    #     if not await is_deal_close(dealID=USER_PHONES[phone]['deal_id']):
+    #         try:
+    #             infoRoom = {
+    #             '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
+    #             '🏠 Как попасть к дому': infoRoom['🏠 Как попасть к дому']
+    #             }
+    #         except:
+    #             infoRoom = {
+    #             '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению']
+    #             # '🏠 Как попасть к дому': infoRoom['🏠 Как попасть к дому']
+    #             }
+    #         keyboard = get_keyboard(infoRoom)
+    #         message_text="""Информация по заселению
+    # После подтверждения оплаты вам будет доступна полная информация по проживанию"""
+    #         await message.answer(message_text, reply_markup=keyboard)
+    #         send_message_to_manager(message.from_user.id, message_text)
+    #         send_message_to_manager(message.from_user.id, infoRoom)
+    #         # message_text='Ваш платеж пока не проверен администрацией. Пожалуйста, попробуйте позже.\nПосле проверки вы сможете получить доступ к информации о квартире через команду /info'
+    #         # await message.answer(message_text)
+    #         # send_message_to_manager(message.from_user.id, message_text)
+    #         return
+    #     else:
+    #         message_text='Ваш договор закрыт. Пожалуйста, свяжитесь с администратором.'
+    #         await message.answer(message_text)
+    #         send_message_to_manager(message.from_user.id, message_text)
+    #         return
+
+
+    # infoRoom = s.get_prepare_info_room(USER_PHONES[phone]['room_name'])
     logger.info(f'infoRoom: {infoRoom}')
 
 
@@ -275,11 +314,11 @@ async def get_info_room(message: Message, state: FSMContext):
     
     # Очищаем состояние
     # await state.clear()
-    message_text='Информация о квартире'
+    # message_text='Информация о квартире'
     await message.answer(message_text, reply_markup=keyboard)
 
     send_message_to_manager(message.from_user.id, message_text)
-    send_message_to_manager(message.from_user.id, keyboard.to_json())
+    # send_message_to_manager(message.from_user.id, keyboard.to_json())
 # Обработчик для файлов и фотографий
 @router.message(F.photo | F.document)
 async def process_file(message: Message):
@@ -354,7 +393,7 @@ async def show_submenu(callback: CallbackQuery):
     
     # Создаем клавиатуру для конкретного ключа
     keyboard = get_keyboard(user_data, filter_key=key)
-    send_message_to_manager(callback.from_user.id, keyboard.to_json())
+    send_message_to_manager(callback.from_user.id)
     await callback.message.edit_reply_markup(reply_markup=keyboard)
 
     await callback.answer()
@@ -374,7 +413,7 @@ async def back_to_main(callback: CallbackQuery):
     keyboard = get_keyboard(user_data)
     
     await callback.message.edit_reply_markup(reply_markup=keyboard)
-    send_message_to_manager(callback.from_user.id, keyboard.to_json())
+    send_message_to_manager(callback.from_user.id)
     await callback.answer()
 
 # Словарь для хранения file_id отправленных файлов
