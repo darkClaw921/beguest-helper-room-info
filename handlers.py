@@ -201,7 +201,7 @@ async def process_phone(message: Message, state: FSMContext):
         # Находим сделку по ID контакта
         deal = await find_deal_by_contact_id(contact[0]['ID'])
         if not deal:
-            message_text='Сделка не найдена. Пожалуйста, свяжитесь с администратором.'
+            message_text='Сделка не найдена. Пожалуйста, свяжитесь с администратором:\n\n- Позвонить по телефону: +79300356988\n- [Написать в WhatsApp](https://api.whatsapp.com/send?phone=79300356988)'
             await message.answer(message_text)
             send_message_to_manager(message.from_user.id, message_text)
             return
