@@ -211,7 +211,7 @@ async def process_phone(message: Message, state: FSMContext):
         USER_PHONES[phone]['room_name']=deal[0][Deal.room_name]
         
         #telegram_id оставляем тот же
-        message_text=f'Вы уже зарегистрированы в системе.Ваши апартаменты: {USER_PHONES[phone]['room_name']}. Пожалуйста, используйте команду /info для получения информации о квартире.'
+        message_text=f'Вы уже зарегистрированы в системе.\nВаши апартаменты: {USER_PHONES[phone]['room_name']}. \nПожалуйста, используйте команду /info для получения информации о квартире.'
         await message.answer(message_text)
         send_message_to_manager(message.from_user.id, message_text)
         
