@@ -902,8 +902,11 @@ async def find_contact_by_phone(phone:str):
         print(f'{phone=}')
 
         for startPhone in startPhones:
+            phone=phone[2:]
             items['filter']['PHONE']=startPhone+phone
+            pprint(items)
             contact=await bit.get_all('crm.contact.list',params=items)
+            pprint(contact)
             if contact:
                 return contact
             else:
@@ -1038,7 +1041,7 @@ async def main():
 if __name__ == '__main__':
     # a=asyncio.run(get_all_event_by_user(userID='138',last_update=datetime.now()-timedelta(days=20)))
     # pprint(a)
-    contact=asyncio.run(find_contact_by_phone('79053066397'))
+    contact=asyncio.run(find_contact_by_phone('79221341312'))
     pprint(contact)
     # a=asyncio.run(get_contact(27859))
     # a=asyncio.run(get_contact(28205))
