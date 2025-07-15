@@ -72,6 +72,13 @@ async def is_user_registered(user_id: int) -> bool:
             return True
     return False
 
+async def get_user_data(user_id: int) -> dict:
+    for phone, data in USER_PHONES.items():
+        if data.get('telegram_id') == user_id:
+            return data
+    return None
+
+
 # Middleware для проверки регистрации пользователя
 class RegistrationMiddleware(BaseMiddleware):
     async def __call__(
@@ -174,7 +181,7 @@ async def process_phone(message: Message, state: FSMContext):
 
 # Для просмотра информации по заселению нажмите на /info"""
         message_text=f"""Вы успешно зарегистрированы в системе. 
-
+Ваши апартаменты: {USER_PHONES[phone]['room_name']}
 Для просмотра информации по заселению нажмите на /info"""
         await bot.send_message(chat_id=message.from_user.id,
                                text=message_text)
@@ -245,8 +252,9 @@ async def get_info_room(message: Message, state: FSMContext):
     if status in STATUS_DEAL_KAK_POPAST_K_DOMU or category in ['0', 0]:
         infoRoom = {
                 # '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
-                '🏠 Как попасть к дому': infoRoom.get('🏠 Как попасть к дому', 'данный файл не существует')
+                '🏠 Как попасть к дому': infoRoom.get('🏠 Как попасть к дому', 'https://google.com')
                 }
+        # if not infoRoom.get('🏠 Как попасть к дому'):
         message_text="""Информация как попасть к дому.
 
 За 10 минут до заезда вам будет доступна инструкция по заселению."""

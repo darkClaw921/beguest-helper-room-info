@@ -864,6 +864,12 @@ async def get_comment_task(taskID:int):
     comment=comment
     return comment
 
+async def transf_phone(phone:str):
+    """79300356988 -> +7 (930) 035-69-88"""
+    
+    phone=f'+7 ({phone[:3]}) {phone[3:6]}-{phone[6:8]}-{phone[8:]}'
+    # phone=phone[1:]
+    return phone
 
 async def find_contact_by_phone(phone:str):
     
@@ -880,6 +886,7 @@ async def find_contact_by_phone(phone:str):
     # contact=await bit.get_all('crm.contact.list',params=items,)
     # contact=await bit.call('crm.contact.list',items=items)
     # pprint(contact)
+    contact=None
     startPhones=['+7','8','7','']
     for startPhone in startPhones:
         items['filter']['PHONE']=startPhone+phone
@@ -890,6 +897,17 @@ async def find_contact_by_phone(phone:str):
             return contact
         else:
             continue
+    if contact == []:
+        phone=await transf_phone(phone)
+        print(f'{phone=}')
+
+        for startPhone in startPhones:
+            items['filter']['PHONE']=startPhone+phone
+            contact=await bit.get_all('crm.contact.list',params=items)
+            if contact:
+                return contact
+            else:
+                continue
     pprint(contact)
     return contact
 
@@ -1020,8 +1038,12 @@ async def main():
 if __name__ == '__main__':
     # a=asyncio.run(get_all_event_by_user(userID='138',last_update=datetime.now()-timedelta(days=20)))
     # pprint(a)
-
+    contact=asyncio.run(find_contact_by_phone('79053066397'))
+    pprint(contact)
+    # a=asyncio.run(get_contact(27859))
+    # a=asyncio.run(get_contact(28205))
+    # pprint(a)
     # asyncio.run(test_create_batch())
-    asyncio.run(main())
-    pass
+    # asyncio.run(main())
+    # pass
     # asyncio.run(get_userfields(234))
