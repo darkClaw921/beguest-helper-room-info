@@ -870,6 +870,15 @@ async def transf_phone(phone:str):
     phone=f'+7 ({phone[:3]}) {phone[3:6]}-{phone[6:8]}-{phone[8:]}'
     # phone=phone[1:]
     return phone
+async def transf_phone_to_2(phone:str):
+    """79308316666 -> +7 (776) 977 67 79"""
+    phone=f'+7 ({phone[:3]}) {phone[3:6]} {phone[6:8]} {phone[8:]}'
+    return phone
+async def transf_phone_to_3(phone:str):
+    """79308316666 -> +7 (776) 977 6779"""
+    phone=f'+7 ({phone[:3]}) {phone[3:6]} {phone[6:8]}{phone[8:]}'
+    return phone
+
 
 async def find_contact_by_phone(phone:str):
     
@@ -881,6 +890,10 @@ async def find_contact_by_phone(phone:str):
         },
         'select':['PHONE','ID','NAME'],
     }
+    items2=items.copy()
+    items3=items.copy()
+    items4=items.copy()
+    
     # pprint(items)
     # 1/0
     # contact=await bit.get_all('crm.contact.list',params=items,)
@@ -897,15 +910,43 @@ async def find_contact_by_phone(phone:str):
             return contact
         else:
             continue
+    
     if contact == []:
-        phone=await transf_phone(phone)
-        print(f'{phone=}')
-
+        phone1=await transf_phone(phone)
+        print(f'{phone1=}')
+        phone1=phone1[2:]
         for startPhone in startPhones:
-            phone=phone[2:]
-            items['filter']['PHONE']=startPhone+phone
-            pprint(items)
-            contact=await bit.get_all('crm.contact.list',params=items)
+            
+            items3['filter']['PHONE']=startPhone+phone1
+            pprint(items3)
+            contact=await bit.get_all('crm.contact.list',params=items3)
+            pprint(contact)
+            if contact:
+                return contact
+            else:
+                continue
+
+    if contact ==[]:
+        phone2=await transf_phone_to_2(phone)
+        print(f'{phone2=}')
+        phone2=phone2[2:]
+        for startPhone in startPhones:
+            items2['filter']['PHONE']=startPhone+phone2
+            pprint(items2)
+            contact=await bit.get_all('crm.contact.list',params=items2)
+            pprint(contact)
+            if contact:
+                return contact
+            else:
+                continue
+    if contact ==[]:
+        phone3=await transf_phone_to_3(phone)
+        print(f'{phone3=}')
+        phone3=phone3[2:]
+        for startPhone in startPhones:
+            items4['filter']['PHONE']=startPhone+phone3
+            pprint(items4)
+            contact=await bit.get_all('crm.contact.list',params=items4)
             pprint(contact)
             if contact:
                 return contact
@@ -913,6 +954,9 @@ async def find_contact_by_phone(phone:str):
                 continue
     pprint(contact)
     return contact
+
+
+
 
 async def find_deal_by_contact_id(contactID:int):
     items={
@@ -1041,9 +1085,9 @@ async def main():
 if __name__ == '__main__':
     # a=asyncio.run(get_all_event_by_user(userID='138',last_update=datetime.now()-timedelta(days=20)))
     # pprint(a)
-    contact=asyncio.run(find_contact_by_phone('79221341312'))
-    pprint(contact)
-    # a=asyncio.run(get_contact(27859))
+    contact=asyncio.run(find_contact_by_phone('77769776779'))
+    # pprint(contact)
+    # a=asyncio.run(get_contact(28345))
     # a=asyncio.run(get_contact(28205))
     # pprint(a)
     # asyncio.run(test_create_batch())
