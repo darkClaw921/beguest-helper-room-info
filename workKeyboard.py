@@ -103,12 +103,13 @@ def get_keyboard(items: dict, filter_key=None):
     
     # Основная клавиатура
     for key, value in items.items():
-        if key == 'Квартира':
+        if key == 'Квартира' or value is None:
             continue
 
         if key == 'Инструкция по заселению':
             processed_value = get_path_to_file_instruction(value, returnIsUrl=True)
         else:
+            
             processed_value = get_path_to_file_info(value, returnIsUrl=True)
         
         if len(key) > 30:

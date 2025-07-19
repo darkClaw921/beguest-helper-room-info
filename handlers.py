@@ -57,7 +57,7 @@ mapping_deal_status={
 
 STATUS_DEAL_KAK_POPAST_K_DOMU=['C7:PREPARATION','C7:UC_3EBBY1','C1:NEW','C1:UC_BYZQTP']
 
-STATUS_DEAL_INFO_ZASELENIE=['C1:UC_NSUETZ','C1:UC_KF562L','C1:UC_UPYQD0','C1:UC_8MQAUR','C1:UC_11XNA1',]
+STATUS_DEAL_INFO_ZASELENIE=['C1:UC_NSUETZ','C1:UC_KF562L','C1:UC_UPYQD0','C1:UC_8MQAUR','C1:UC_11XNA1']
 
 STATUS_DEAL_ALL_INFO=['C1:PREPAYMENT_INVOICE', 'C1:EXECUTING']
 
@@ -155,6 +155,7 @@ async def process_phone(message: Message, state: FSMContext):
         
         # Находим сделку по ID контакта
         deal = await find_deal_by_contact_id(contact[0]['ID'])
+        # pprint(deal)
         if not deal:
             message_text='Сделка не найдена. Пожалуйста, свяжитесь с администратором.'
             await message.answer(message_text)
@@ -252,17 +253,25 @@ async def get_info_room(message: Message, state: FSMContext):
     if status in STATUS_DEAL_KAK_POPAST_K_DOMU or category in ['0', 0]:
         infoRoom = {
                 # '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
-                '🏠 Как попасть к дому': infoRoom.get('🏠 Как попасть к дому', 'https://google.com')
+                '🏠 Как попасть к дому': infoRoom.get('🏠 Как попасть к дому')
                 }
         # if not infoRoom.get('🏠 Как попасть к дому'):
-        message_text="""Информация как попасть к дому.
-
-За 10 минут до заезда вам будет доступна инструкция по заселению."""
+        if infoRoom.get('🏠 Как попасть к дому') is None:
+            message_text="""Информация как попасть к дому.
+За 20 минут до заезда вам будет доступна инструкция по заселению."""
+        else:
+            message_text="""Информация как попасть к дому."""
 
     elif status in STATUS_DEAL_INFO_ZASELENIE:
-        infoRoom = {
+        if infoRoom.get('🏠 Как попасть к дому') is None:
+            infoRoom = {
                 '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
-                '🏠 Как попасть к дому': infoRoom.get('🏠 Как попасть к дому', 'данный файл не существует')
+                # '🏠 Как попасть к дому': infoRoom.get('🏠 Как попасть к дому')
+                }
+        else:
+            infoRoom = {
+                '🗒 Инструкция по заселению': infoRoom['🗒  Инструкция по заселению'],
+                '🏠 Как попасть к дому': infoRoom.get('🏠 Как попасть к дому')
                 }
         message_text='Для доступа к инструкции по заселению нажмите на /info'
     elif status in STATUS_DEAL_ALL_INFO:
@@ -323,6 +332,7 @@ async def get_info_room(message: Message, state: FSMContext):
     # Очищаем состояние
     # await state.clear()
     # message_text='Информация о квартире'
+
     await message.answer(message_text, reply_markup=keyboard)
 
     send_message_to_manager(message.from_user.id, message_text)
