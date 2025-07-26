@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from aiogram import types, F, Router, html, Bot
 from aiogram.types import (Message, CallbackQuery,
                            InputFile, FSInputFile,
@@ -679,7 +680,7 @@ async def download_and_send_file(callback: CallbackQuery):
         save_file_id_cache()
         
     except Exception as e:
-        logger.error(f"Ошибка при отправке файла: {e}")
+        logger.error(f"Ошибка при отправке файла: {traceback.format_exc()}")
         message_text='Не удалось отправить файл. Возможно, файл слишком большой. Обратитесь в тех. поддержку'
         await callback.message.answer(message_text)
         send_message_to_manager(callback.from_user.id, message_text)

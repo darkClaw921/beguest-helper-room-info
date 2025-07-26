@@ -69,6 +69,7 @@ class YandexDiskDownloader:
             file_path=file_path.replace('_telegram', '')
             try:
                 self.yadisk.download(file_path, save_path)
+                logger.info(f"Файл успешно скачан без телеграм:{file_path} {save_path}")
                 downloadTrue=True
             except Exception as e:
                 logger.error(f"Ошибка при скачивании файла '{file_path}': {e}")
@@ -199,19 +200,20 @@ if __name__ == "__main__":
     downloader = YandexDiskDownloader()
     # MAIN_PATH='disk:/✅ИНСТРУКЦИИ и ИНФО по крвартирам'
     MAIN_PATH='disk:/✅ИНСТРУКЦИИ и ИНФО по крвартирам'
-    file_path = f"{MAIN_PATH}/ИНФО ПО КВАРТИРАМ/Фрунзе 31-127/Как включать плиту.mov"
+    apart='/Постовского 17а - 156/Телевизор_Постовского_telegram.mp4'
+    file_path = f"{MAIN_PATH}/ИНФО ПО КВАРТИРАМ{apart}"
     save_path = "квартира2_low.mov"
     # Проверяем существование файла
     # MAIN_PATH='/'
     # files=downloader.get_folder_path(MAIN_PATH)
     # pprint(files)
 
-    # files=downloader.download_file(file_path,save_path)
-    # pprint(files)
-    folder_path=f"{MAIN_PATH}/ИНФО ПО КВАРТИРАМ/8 марта 204д - 116 (16 этаж)/2{save_path}"
-    print(folder_path)
-    result=downloader.upload_file(save_path,folder_path)
-    print(result)
+    files=downloader.download_file(file_path,save_path)
+    pprint(files)
+    # folder_path=f"{MAIN_PATH}/ИНФО ПО КВАРТИРАМ/8 марта 204д - 116 (16 этаж)/2{save_path}"
+    # print(folder_path)
+    # result=downloader.upload_file(save_path,folder_path)
+    # print(result)
     # if downloader.file_exists(file_path):
     #     # Скачиваем файл
     #     result = downloader.download_file(file_path, save_path)
