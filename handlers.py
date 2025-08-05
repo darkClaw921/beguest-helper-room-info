@@ -149,7 +149,7 @@ async def process_phone(message: Message, state: FSMContext):
         # Если нет, то ищем контакт в Битриксе
         contact = await find_contact_by_phone(phone)
         if not contact:
-            message_text='Номер не найден в системе. Пожалуйста, проверьте номер или свяжитесь с администратором.'
+            message_text='Номер не найден в системе. Пожалуйста, проверьте номер или свяжитесь с администратором, для связи вы можете:\n\n- Позвонить по телефону: +79300356988\n- [Написать в WhatsApp](https://api.whatsapp.com/send?phone=79300356988)'
             await message.answer(message_text)
             send_message_to_manager(message.from_user.id, message_text)
             return
@@ -158,7 +158,7 @@ async def process_phone(message: Message, state: FSMContext):
         deal = await find_deal_by_contact_id(contact[0]['ID'])
         # pprint(deal)
         if not deal:
-            message_text='Сделка не найдена. Пожалуйста, свяжитесь с администратором.'
+            message_text='Сделка не найдена. Пожалуйста, свяжитесь с администратором, для связи вы можете:\n\n- Позвонить по телефону: +79300356988\n- [Написать в WhatsApp](https://api.whatsapp.com/send?phone=79300356988)'
             await message.answer(message_text)
             send_message_to_manager(message.from_user.id, message_text)
             return
@@ -387,7 +387,7 @@ async def process_file(message: Message):
     send_file_message_to_manager(message.from_user.id, name_file, data)
     # Обновляем статус в словаре
     USER_PHONES[phone]['status'] = Deal.Status.check_payment
-    message_text='Спасибо! Ваш платеж отправлен на проверку. После проверки вы сможете получить доступ к информации по проживанию.'
+    message_text='Файл отправлен, свяжитесь с администратором:\n\n- Позвонить по телефону: +79300356988\n- [Написать в WhatsApp](https://api.whatsapp.com/send?phone=79300356988)'
     await message.answer(message_text)
     send_message_to_manager(message.from_user.id, message_text)
     send_message_to_manager(message.from_user.id, '🤖 Пользователь отправил файл, просмотреть его вы можете в сделке')
@@ -412,7 +412,10 @@ async def show_submenu(callback: CallbackQuery):
     
     # Создаем клавиатуру для конкретного ключа
     keyboard = get_keyboard(user_data, filter_key=key)
-    send_message_to_manager(callback.from_user.id)
+    
+    # Отправляем сообщение менеджеру о том, что пользователь запросил конкретную информацию
+    send_message_to_manager(callback.from_user.id, f'🤖 Пользователь запросил {key}')
+    
     await callback.message.edit_reply_markup(reply_markup=keyboard)
 
     await callback.answer()
