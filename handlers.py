@@ -24,7 +24,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from typing import Dict, Any, Callable, Awaitable
 from yadisk_downloader import YandexDiskDownloader
-from helper import extract_text_from_docx, convert_heic_to_jpg, send_message_to_manager, send_message_to_manager, send_first_message_to_manager, send_file_message_to_manager
+from helper import extract_text_from_docx, convert_heic_to_jpg, send_message_to_manager, send_message_to_manager, send_first_message_to_manager, send_file_message_to_manager, get_path_to_file_instruction
 # from dataclasses import dataclass
 logger.add("logs/handlers_{time}.log",format="{time} - {level} -{file}:{line} - {message}", rotation="100 MB", retention="10 days", level="DEBUG")
 load_dotenv()
@@ -484,6 +484,20 @@ async def download_and_send_file(callback: CallbackQuery):
         return
     
     logger.info(f'Найден путь: {file_path}')
+
+    # Определяем, является ли запрошенный ресурс "Инструкцией по заселению"
+    # Для инструкций отключаем использование кеша file_id и локальной копии — всегда скачиваем заново
+    def is_instruction_resource(path: str) -> bool:
+        try:
+            lower_path = path.lower()
+        except Exception:
+            lower_path = str(path).lower()
+        return (
+            'docs.yandex.ru/docs/view' in lower_path
+            or 'ya-disk-public' in lower_path
+            or 'адреса, инструкции' in lower_path
+            or 'инструкц' in lower_path
+        )
     
     # Проверяем, является ли путь относительным
     is_relative_path = file_path.startswith('/') and '://' not in file_path
@@ -531,8 +545,8 @@ async def download_and_send_file(callback: CallbackQuery):
     os.makedirs(os.path.join("videos", folder_name), exist_ok=True)
     local_file_path = os.path.join("videos", folder_name, telegram_file_name)
     
-    # Проверяем, есть ли файл в кеше по file_id
-    if local_file_path in file_id_cache:
+    # Проверяем, есть ли файл в кеше по file_id (кроме инструкций – для них кеш отключен)
+    if (not is_instruction_resource(file_path)) and (local_file_path in file_id_cache):
         cached_file_id = file_id_cache[local_file_path]
         logger.info(f"Найден закешированный file_id: {cached_file_id} для {local_file_path}")
         send_message_to_manager(callback.from_user.id, f'🤖 Пользователь запросил файл {file_caption}')
@@ -575,8 +589,8 @@ async def download_and_send_file(callback: CallbackQuery):
             del file_id_cache[local_file_path]
             save_file_id_cache()
     
-    # Проверяем, существует ли файл локально
-    if not os.path.isfile(local_file_path):
+    # Проверяем, существует ли файл локально. Для инструкций всегда перекачиваем.
+    if is_instruction_resource(file_path) or not os.path.isfile(local_file_path):
         await callback.message.answer(f"Скачиваю файл {file_caption}...")
         send_message_to_manager(callback.from_user.id, f'🤖 Пользователь запросил файл {file_caption}')
         try:
@@ -641,8 +655,8 @@ async def download_and_send_file(callback: CallbackQuery):
                 width=1080,
                 height=1920,
             )
-            # Сохраняем file_id видео
-            if sent_message and sent_message.video:
+            # Сохраняем file_id видео (кроме инструкций)
+            if (not is_instruction_resource(file_path)) and sent_message and sent_message.video:
                 file_id = sent_message.video.file_id
                 logger.info(f"Получен file_id видео: {file_id} для {local_file_path}")
                 file_id_cache[local_file_path] = file_id
@@ -653,13 +667,13 @@ async def download_and_send_file(callback: CallbackQuery):
                 photo=file,
                 caption=file_caption
             )
-            # Сохраняем file_id фото
-            if sent_message and sent_message.photo:
+            # Сохраняем file_id фото (кроме инструкций)
+            if (not is_instruction_resource(file_path)) and sent_message and sent_message.photo:
                 file_id = sent_message.photo[-1].file_id  # Берем последнее (самое качественное) фото
                 logger.info(f"Получен file_id фото: {file_id} для {local_file_path}")
                 file_id_cache[local_file_path] = file_id
         
-        else:  # document
+        else:  # document (инструкции обычно .docx — всегда скачиваем заново, кеш не используем)
 
             text=extract_text_from_docx(local_file_path)
             print(text)
@@ -673,11 +687,7 @@ async def download_and_send_file(callback: CallbackQuery):
             #     caption=file_caption
             # )
 
-            # Сохраняем file_id документа
-            if sent_message and sent_message.document:
-                file_id = sent_message.document.file_id
-                logger.info(f"Получен file_id документа: {file_id} для {local_file_path}")
-                file_id_cache[local_file_path] = file_id
+            # Для документов (инструкций) file_id не сохраняем
         
         # Сохраняем кеш file_id
         save_file_id_cache()

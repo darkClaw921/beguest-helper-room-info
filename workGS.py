@@ -188,7 +188,7 @@ if __name__ == '__main__':
     # infoRoom=s.find_cell('8 марта 204д - 116 (16 этаж)')
     # infoRoom=s.get_prepare_info_room('8 марта 204д - 116 (16 этаж)')
     # infoRoom=s.get_prepare_info_room('Надеждинская 26 -213')
-    infoRoom=s.get_prepare_info_room('Апартаменты на Фрунзе 31')
+    infoRoom=s.get_prepare_info_room('Постовского 17а - 156')
     pprint(infoRoom)
     # infoRoom=s.get_all_values_row(rowRoom.row)
     # pprint(infoRoom)
