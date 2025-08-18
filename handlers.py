@@ -497,6 +497,7 @@ async def download_and_send_file(callback: CallbackQuery):
             or 'ya-disk-public' in lower_path
             or 'адреса, инструкции' in lower_path
             or 'инструкц' in lower_path
+            or 'docx' in lower_path
         )
     
     # Проверяем, является ли путь относительным
